@@ -21,6 +21,8 @@ export const AccountsView = () => {
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [displayAmount, setDisplayAmount] = useState("");
+    const [amount, setAmount] = useState("");
 
     const fetchData = async () => {
         setLoading(true);
@@ -38,6 +40,12 @@ export const AccountsView = () => {
         fetchData();
     }, []);
 
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, "");
+        setAmount(value);
+        setDisplayAmount(value ? new Intl.NumberFormat("id-ID").format(parseInt(value, 10)) : "");
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setSaving(true);
@@ -54,6 +62,8 @@ export const AccountsView = () => {
                 alert(result.error);
             } else {
                 setIsAdding(false);
+                setAmount("");
+                setDisplayAmount("");
                 fetchData();
             }
         } catch (error) {
@@ -150,10 +160,12 @@ export const AccountsView = () => {
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-[#1d1d1b] uppercase">Saldo Awal</label>
+                                    <input type="hidden" name="balance" value={amount} />
                                     <input
-                                        name="balance"
-                                        type="number"
+                                        type="text"
                                         required
+                                        value={displayAmount}
+                                        onChange={handleAmountChange}
                                         placeholder="0"
                                         className="w-full px-4 py-2 rounded-xl border border-[#e5e2da] bg-white text-sm text-[#1d1d1b] outline-none focus:border-[#d97757]/50"
                                     />

@@ -23,6 +23,8 @@ export const BudgetsView = () => {
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [displayAmount, setDisplayAmount] = useState("");
+    const [amount, setAmount] = useState("");
 
     const fetchData = async () => {
         setLoading(true);
@@ -40,20 +42,38 @@ export const BudgetsView = () => {
         fetchData();
     }, []);
 
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, "");
+        setAmount(value);
+        setDisplayAmount(value ? new Intl.NumberFormat("id-ID").format(parseInt(value, 10)) : "");
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setSaving(true);
         const formData = new FormData(e.currentTarget);
 
+        const resetDate = parseInt(formData.get("reset_date") as string, 10);
+        const now = new Date();
+        const start_date = new Date(now.getFullYear(), now.getMonth(), resetDate);
+        if (now.getDate() < resetDate) {
+            start_date.setMonth(start_date.getMonth() - 1);
+        }
+        const end_date = new Date(start_date);
+        end_date.setMonth(end_date.getMonth() + 1);
+        end_date.setDate(end_date.getDate() - 1);
+
         try {
             await addBudget({
                 category: formData.get("category") as string,
                 amount: parseFloat(formData.get("amount") as string),
-                period: formData.get("period") as string,
-                start_date: new Date(formData.get("start_date") as string),
-                end_date: new Date(formData.get("end_date") as string),
+                period: "MONTHLY",
+                start_date,
+                end_date,
             });
             setIsAdding(false);
+            setAmount("");
+            setDisplayAmount("");
             fetchData();
         } catch (error) {
             alert("Gagal menambah anggaran.");
@@ -121,24 +141,12 @@ export const BudgetsView = () => {
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Batas (Rp)</label>
-                                        <input name="amount" type="number" required placeholder="0" className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
+                                        <input type="hidden" name="amount" value={amount} />
+                                        <input type="text" required value={displayAmount} onChange={handleAmountChange} placeholder="0" className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Periode</label>
-                                        <select name="period" className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50">
-                                            <option value="MONTHLY">Bulanan</option>
-                                            <option value="WEEKLY">Mingguan</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Tanggal Mulai</label>
-                                        <input name="start_date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Tanggal Berakhir</label>
-                                        <input name="end_date" type="date" required className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
+                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Tanggal Siklus (1-31)</label>
+                                        <input name="reset_date" type="number" min="1" max="31" required defaultValue={new Date().getDate()} className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
@@ -157,6 +165,16 @@ export const BudgetsView = () => {
 
             <div className="grid grid-cols-1 gap-6">
                 {budgets.map((budget) => {
+                    const resetDate = new Date(budget.start_date).getDate();
+                    const now = new Date();
+                    const currentStart = new Date(now.getFullYear(), now.getMonth(), resetDate);
+                    if (now.getDate() < resetDate) {
+                        currentStart.setMonth(currentStart.getMonth() - 1);
+                    }
+                    const currentEnd = new Date(currentStart);
+                    currentEnd.setMonth(currentEnd.getMonth() + 1);
+                    currentEnd.setDate(currentEnd.getDate() - 1);
+
                     const used = 0; // In real app, calculate from transactions
                     const percentage = Math.min((used / budget.amount) * 100, 100);
                     const isOver = used > budget.amount;
@@ -173,7 +191,7 @@ export const BudgetsView = () => {
                                             <div>
                                                 <h4 className="font-bold text-[#1d1d1b]">{budget.category}</h4>
                                                 <p className="text-[10px] text-[#1d1d1b] uppercase font-bold tracking-widest">
-                                                    {budget.period} • {format(new Date(budget.start_date), "dd MMM")} - {format(new Date(budget.end_date), "dd MMM yyyy")}
+                                                    Bulanan • {format(currentStart, "dd MMM", { locale: id })} - {format(currentEnd, "dd MMM yyyy", { locale: id })}
                                                 </p>
                                             </div>
                                         </div>

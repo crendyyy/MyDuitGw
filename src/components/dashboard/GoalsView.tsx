@@ -24,6 +24,12 @@ export const GoalsView = () => {
     const [isAdding, setIsAdding] = useState(false);
     const [saving, setSaving] = useState(false);
 
+    const [displayTarget, setDisplayTarget] = useState("");
+    const [targetAmount, setTargetAmount] = useState("");
+
+    const [displayCurrent, setDisplayCurrent] = useState("");
+    const [currentAmount, setCurrentAmount] = useState("");
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -40,6 +46,18 @@ export const GoalsView = () => {
         fetchData();
     }, []);
 
+    const handleTargetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, "");
+        setTargetAmount(value);
+        setDisplayTarget(value ? new Intl.NumberFormat("id-ID").format(parseInt(value, 10)) : "");
+    };
+
+    const handleCurrentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, "");
+        setCurrentAmount(value);
+        setDisplayCurrent(value ? new Intl.NumberFormat("id-ID").format(parseInt(value, 10)) : "");
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setSaving(true);
@@ -53,6 +71,10 @@ export const GoalsView = () => {
                 deadline: formData.get("deadline") ? new Date(formData.get("deadline") as string) : undefined,
             });
             setIsAdding(false);
+            setDisplayTarget("");
+            setTargetAmount("");
+            setDisplayCurrent("");
+            setCurrentAmount("");
             fetchData();
         } catch (error) {
             alert("Gagal menambah target.");
@@ -125,7 +147,8 @@ export const GoalsView = () => {
                                         <label className="text-xs font-bold text-[#1d1d1b] uppercase">Berapa biaya yang dibutuhkan?</label>
                                         <div className="relative">
                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[#1d1d1b]">Rp</span>
-                                            <input name="target_amount" type="number" required placeholder="0" className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
+                                            <input type="hidden" name="target_amount" value={targetAmount} />
+                                            <input type="text" required value={displayTarget} onChange={handleTargetChange} placeholder="0" className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
                                         </div>
                                     </div>
                                 </div>
@@ -134,7 +157,8 @@ export const GoalsView = () => {
                                         <label className="text-xs font-bold text-[#1d1d1b] uppercase">Terisi saat ini</label>
                                         <div className="relative">
                                             <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6b6b]" />
-                                            <input name="current_amount" type="number" defaultValue="0" className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
+                                            <input type="hidden" name="current_amount" value={currentAmount} />
+                                            <input type="text" value={displayCurrent} onChange={handleCurrentChange} placeholder="0" className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">

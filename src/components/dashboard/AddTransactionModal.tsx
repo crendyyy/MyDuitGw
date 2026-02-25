@@ -18,6 +18,8 @@ export const AddTransactionModal = () => {
     const [accounts, setAccounts] = useState<any[]>([]);
     const [budgetCategories, setBudgetCategories] = useState<string[]>([]);
     const [txType, setTxType] = useState("EXPENSE");
+    const [displayAmount, setDisplayAmount] = useState("");
+    const [amount, setAmount] = useState("");
 
     useEffect(() => {
         if (isAddModalOpen) {
@@ -49,6 +51,12 @@ export const AddTransactionModal = () => {
             : ["Makan & Minum", "Transportasi", "Tagihan", "Belanja", "Pengeluaran Lainnya"];
     };
 
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, "");
+        setAmount(value);
+        setDisplayAmount(value ? new Intl.NumberFormat("id-ID").format(parseInt(value, 10)) : "");
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
@@ -76,6 +84,8 @@ export const AddTransactionModal = () => {
                 setError((result as any).error);
             } else {
                 setIsAddModalOpen(false);
+                setAmount("");
+                setDisplayAmount("");
                 (e.target as HTMLFormElement).reset();
                 // Potentially trigger a refresh if not using revalidatePath correctly
                 window.location.reload();
@@ -136,12 +146,14 @@ export const AddTransactionModal = () => {
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1d1d1b] font-bold text-sm transition-colors">
                                             Rp
                                         </span>
+                                        <input type="hidden" name="amount" value={amount} />
                                         <input
-                                            name="amount"
-                                            type="number"
+                                            type="text"
                                             required
+                                            value={displayAmount}
+                                            onChange={handleAmountChange}
                                             placeholder="0"
-                                            className="w-full bg-[#f9f8f4] border border-[#e5e2da] rounded-xl py-4 pl-12 pr-4 outline-none focus:border-[#d97757]/50 focus:ring-4 focus:ring-[#d97757]/5 transition-all text-xl font-semibold text-[#1d1d1b] placeholder:text-[#6b6b6b]/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="w-full bg-[#f9f8f4] border border-[#e5e2da] rounded-xl py-4 pl-12 pr-4 outline-none focus:border-[#d97757]/50 focus:ring-4 focus:ring-[#d97757]/5 transition-all text-xl font-semibold text-[#1d1d1b] placeholder:text-[#6b6b6b]/30"
                                         />
                                     </div>
                                 </div>
