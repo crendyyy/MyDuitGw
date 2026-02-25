@@ -12,7 +12,7 @@ export const SummaryBudgets = ({ onSeeAll }: { onSeeAll: () => void }) => {
         const fetchData = async () => {
             try {
                 const data = await getBudgets();
-                setBudgets(data.slice(0, 2));
+                setBudgets(data.slice(0, 4));
             } catch (error) {
                 console.error(error);
             } finally {
