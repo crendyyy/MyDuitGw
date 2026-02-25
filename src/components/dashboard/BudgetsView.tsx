@@ -175,7 +175,7 @@ export const BudgetsView = () => {
                     currentEnd.setMonth(currentEnd.getMonth() + 1);
                     currentEnd.setDate(currentEnd.getDate() - 1);
 
-                    const used = 0; // In real app, calculate from transactions
+                    const used = budget.used || 0;
                     const percentage = Math.min((used / budget.amount) * 100, 100);
                     const isOver = used > budget.amount;
 

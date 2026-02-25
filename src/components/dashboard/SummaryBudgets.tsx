@@ -36,7 +36,7 @@ export const SummaryBudgets = ({ onSeeAll }: { onSeeAll: () => void }) => {
         <div className="space-y-4">
             {budgets.length > 0 ? (
                 budgets.map((budget) => {
-                    const used = 0; // Mock until we have aggregation
+                    const used = budget.used || 0;
                     const percentage = Math.min((used / budget.amount) * 100, 100);
                     return (
                         <div key={budget.id} className="space-y-2">

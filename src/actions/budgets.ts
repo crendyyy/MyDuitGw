@@ -10,10 +10,44 @@ export async function getBudgets() {
     if (!session?.user) throw new Error("Unauthorized");
     const userId = (session.user as any).id;
 
-    return await prisma.budget.findMany({
+    const budgets = await prisma.budget.findMany({
         where: { user_id: userId },
         orderBy: { created_at: "desc" },
     });
+
+    const budgetsWithUsage = await Promise.all(
+        budgets.map(async (budget) => {
+            const resetDate = new Date(budget.start_date).getDate();
+            const now = new Date();
+            const currentStart = new Date(now.getFullYear(), now.getMonth(), resetDate);
+            if (now.getDate() < resetDate) {
+                currentStart.setMonth(currentStart.getMonth() - 1);
+            }
+            const currentEnd = new Date(currentStart);
+            currentEnd.setMonth(currentEnd.getMonth() + 1);
+            currentEnd.setDate(currentEnd.getDate() - 1);
+
+            const usedRaw = await prisma.transaction.aggregate({
+                _sum: { amount: true },
+                where: {
+                    user_id: userId,
+                    type: "EXPENSE",
+                    category: budget.category,
+                    date: {
+                        gte: currentStart,
+                        lte: currentEnd,
+                    },
+                },
+            });
+
+            return {
+                ...budget,
+                used: usedRaw._sum.amount || 0,
+            };
+        })
+    );
+
+    return budgetsWithUsage;
 }
 
 export async function addBudget(data: {
