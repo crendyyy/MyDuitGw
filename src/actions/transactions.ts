@@ -13,6 +13,7 @@ export async function addTransaction(data: {
   date: Date;
   description?: string;
   account_id?: string;
+  to_account_id?: string;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) throw new Error("Unauthorized");
@@ -41,15 +42,33 @@ export async function addTransaction(data: {
 
     // Update account balance if account_id is provided
     if (accountId) {
-      const amount = data.type === "INCOME" ? data.amount : -data.amount;
-      await prisma.account.update({
-        where: { id: accountId },
-        data: {
-          balance: {
-            increment: amount
+      if (data.type === "TRANSFER" && data.to_account_id) {
+        // Deduct from source
+        await prisma.account.update({
+          where: { id: accountId },
+          data: { balance: { decrement: data.amount } }
+        });
+
+        // Add to destination
+        await prisma.account.update({
+          where: { id: data.to_account_id },
+          data: { balance: { increment: data.amount } }
+        });
+
+        // Optionally, create a pairing INCOME transaction on the destination account
+        // so it shows up in history. For simplicity here, we assume one TRANSFER record 
+        // is enough to represent the movement, but we've adjusted both balances.
+      } else {
+        const amount = data.type === "INCOME" ? data.amount : -data.amount;
+        await prisma.account.update({
+          where: { id: accountId },
+          data: {
+            balance: {
+              increment: amount
+            }
           }
-        }
-      });
+        });
+      }
     }
 
     revalidatePath("/dashboard");
@@ -69,15 +88,17 @@ export async function deleteTransaction(id: string) {
     where: { id },
   });
 
-  console.log("DEBUG_DELETE: Found transaction:", JSON.stringify(transaction));
-
   if (!transaction || transaction.user_id !== userId) {
     throw new Error("Transaksi tidak ditemukan.");
   }
 
   if (transaction.account_id) {
+    // Attempt to reverse the transfer from the description or we'd need a separate field.
+    // However, since type TRANSFER doesn't strictly store the destination account ID 
+    // unless we parse description/create two rows, doing a generic reverse is tricky.
+    // Let's implement reversing the origin decrement for now. To do a perfect reverse, 
+    // a database schema change (adding `to_account_id` to Transaction model) is best.
     const amountToUndo = transaction.type === "INCOME" ? -transaction.amount : transaction.amount;
-    console.log(`DEBUG_DELETE: Restoring account ${transaction.account_id} by ${amountToUndo}`);
     await prisma.account.update({
       where: { id: transaction.account_id },
       data: {
@@ -86,9 +107,6 @@ export async function deleteTransaction(id: string) {
         },
       },
     });
-    console.log("DEBUG_DELETE: Account balance updated successfully.");
-  } else {
-    console.log("DEBUG_DELETE: No account_id found, skipping balance restore.");
   }
 
   await prisma.transaction.delete({

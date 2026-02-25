@@ -71,14 +71,20 @@ export const AddTransactionModal = () => {
         const account_id = formData.get("account_id") as string;
 
         try {
-            const result = await addTransaction({
+            const payload: any = {
                 amount,
                 type,
                 category,
                 date,
                 description,
                 account_id,
-            });
+            };
+
+            if (txType === "TRANSFER") {
+                payload.to_account_id = formData.get("to_account_id") as string;
+            }
+
+            const result = await addTransaction(payload);
 
             if ((result as any).error) {
                 setError((result as any).error);
@@ -177,7 +183,7 @@ export const AddTransactionModal = () => {
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-bold text-[#1d1d1b] uppercase tracking-wider ml-1">
-                                            Metode / Akun
+                                            {txType === "TRANSFER" ? "Akun Asal" : "Metode / Akun"}
                                         </label>
                                         <div className="relative group">
                                             <Wallet className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b6b6b] w-4 h-4 group-focus-within:text-[#d97757]" />
@@ -185,7 +191,7 @@ export const AddTransactionModal = () => {
                                                 name="account_id"
                                                 className="w-full bg-[#f9f8f4] border border-[#e5e2da] rounded-xl py-3 pl-10 pr-4 outline-none focus:border-[#d97757]/50 transition-all text-sm text-[#1d1d1b] cursor-pointer appearance-none"
                                             >
-                                                <option value="">Pilih Akun (Opsional)</option>
+                                                <option value="">Pilih Akun {txType === "TRANSFER" ? "Asal" : "(Opsional)"}</option>
                                                 {accounts.map((acc) => (
                                                     <option key={acc.id} value={acc.id}>
                                                         {acc.name} ({acc.type})
@@ -195,6 +201,29 @@ export const AddTransactionModal = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {txType === "TRANSFER" && (
+                                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
+                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase tracking-wider ml-1">
+                                            Ke Akun Tujuan
+                                        </label>
+                                        <div className="relative group">
+                                            <Wallet className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b6b6b] w-4 h-4 group-focus-within:text-[#d97757]" />
+                                            <select
+                                                name="to_account_id"
+                                                required
+                                                className="w-full bg-[#f9f8f4] border border-[#e5e2da] rounded-xl py-3 pl-10 pr-4 outline-none focus:border-[#d97757]/50 transition-all text-sm text-[#1d1d1b] cursor-pointer appearance-none"
+                                            >
+                                                <option value="">Pilih Akun Tujuan</option>
+                                                {accounts.map((acc) => (
+                                                    <option key={acc.id} value={acc.id}>
+                                                        {acc.name} ({acc.balance ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(acc.balance) : "Rp 0"})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">

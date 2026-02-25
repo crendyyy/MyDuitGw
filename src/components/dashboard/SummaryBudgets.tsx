@@ -46,7 +46,7 @@ export const SummaryBudgets = ({ onSeeAll }: { onSeeAll: () => void }) => {
                             </div>
                             <div className="h-1.5 w-full bg-[#f1efea] rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full ${percentage > 80 ? 'bg-rose-500' : 'bg-[#1d1d1b]'}`}
+                                    className={`h-full rounded-full ${used > budget.amount ? 'bg-rose-500' : 'bg-[#1d1d1b]'}`}
                                     style={{ width: `${percentage}%` }}
                                 />
                             </div>
