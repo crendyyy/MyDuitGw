@@ -43,7 +43,7 @@ export const TransactionsView = () => {
         if (!confirm("Hapus transaksi ini?")) return;
         try {
             await deleteTransaction(id);
-            fetchData();
+            window.location.reload();
         } catch (error) {
             alert("Gagal menghapus transaksi.");
         }

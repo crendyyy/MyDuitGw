@@ -30,7 +30,7 @@ export const RecentTransactions = () => {
         if (!confirm("Hapus transaksi ini?")) return;
         try {
             await deleteTransaction(id);
-            fetchData(); // Refresh
+            window.location.reload();
         } catch (error) {
             alert("Gagal menghapus transaksi.");
         }
@@ -70,7 +70,7 @@ export const RecentTransactions = () => {
                 >
                     <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.type === "INCOME" ? "bg-emerald-50 text-emerald-600" :
-                                tx.type === "TRANSFER" ? "bg-blue-50 text-blue-600" : "bg-rose-50 text-rose-600"
+                            tx.type === "TRANSFER" ? "bg-blue-50 text-blue-600" : "bg-rose-50 text-rose-600"
                             }`}>
                             {tx.type === "INCOME" ? <ArrowDownLeft className="w-5 h-5" /> :
                                 tx.type === "TRANSFER" ? <RefreshCcw className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}

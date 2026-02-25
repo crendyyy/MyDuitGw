@@ -65,8 +65,34 @@ export async function deleteTransaction(id: string) {
   if (!session?.user) throw new Error("Unauthorized");
   const userId = (session.user as any).id;
 
+  const transaction = await prisma.transaction.findUnique({
+    where: { id },
+  });
+
+  console.log("DEBUG_DELETE: Found transaction:", JSON.stringify(transaction));
+
+  if (!transaction || transaction.user_id !== userId) {
+    throw new Error("Transaksi tidak ditemukan.");
+  }
+
+  if (transaction.account_id) {
+    const amountToUndo = transaction.type === "INCOME" ? -transaction.amount : transaction.amount;
+    console.log(`DEBUG_DELETE: Restoring account ${transaction.account_id} by ${amountToUndo}`);
+    await prisma.account.update({
+      where: { id: transaction.account_id },
+      data: {
+        balance: {
+          increment: amountToUndo,
+        },
+      },
+    });
+    console.log("DEBUG_DELETE: Account balance updated successfully.");
+  } else {
+    console.log("DEBUG_DELETE: No account_id found, skipping balance restore.");
+  }
+
   await prisma.transaction.delete({
-    where: { id, user_id: userId },
+    where: { id },
   });
 
   revalidatePath("/dashboard");
