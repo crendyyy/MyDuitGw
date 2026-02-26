@@ -12,7 +12,9 @@ import {
     RefreshCcw,
     Search,
     Filter,
-    Download
+    Download,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,12 +24,16 @@ export const TransactionsView = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("ALL");
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     const fetchData = async () => {
         setLoading(true);
         try {
             const data = await getTransactions();
             setTransactions(data);
+            console.log(data);
+
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
         } finally {
@@ -60,9 +66,20 @@ export const TransactionsView = () => {
     const filteredTransactions = transactions.filter(tx => {
         const matchesSearch = tx.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (tx.description && tx.description.toLowerCase().includes(searchTerm.toLowerCase()));
-        const matchesFilter = filterType === "ALL" || tx.type === filterType;
-        return matchesSearch && matchesFilter;
+        const matchesType = filterType === "ALL" || tx.type === filterType;
+        return matchesSearch && matchesType;
     });
+
+    const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    // Reset pagination when filter or search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterType]);
 
     if (loading) {
         return (
@@ -115,6 +132,7 @@ export const TransactionsView = () => {
                             <tr className="bg-[#f9f8f4] text-left border-bottom border-[#e5e2da]">
                                 <th className="px-6 py-4 text-xs font-bold text-[#6b6b6b] uppercase tracking-wider">Tanggal</th>
                                 <th className="px-6 py-4 text-xs font-bold text-[#6b6b6b] uppercase tracking-wider">Kategori & Deskripsi</th>
+                                <th className="px-6 py-4 text-xs font-bold text-[#6b6b6b] uppercase tracking-wider">Akun</th>
                                 <th className="px-6 py-4 text-xs font-bold text-[#6b6b6b] uppercase tracking-wider">Tipe</th>
                                 <th className="px-6 py-4 text-xs font-bold text-[#6b6b6b] uppercase tracking-wider text-right">Jumlah</th>
                                 <th className="px-6 py-4 text-xs font-bold text-[#6b6b6b] uppercase tracking-wider text-right">Aksi</th>
@@ -122,8 +140,8 @@ export const TransactionsView = () => {
                         </thead>
                         <tbody className="divide-y divide-[#e5e2da]">
                             <AnimatePresence mode="popLayout">
-                                {filteredTransactions.length > 0 ? (
-                                    filteredTransactions.map((tx) => (
+                                {paginatedTransactions.length > 0 ? (
+                                    paginatedTransactions.map((tx) => (
                                         <motion.tr
                                             key={tx.id}
                                             initial={{ opacity: 0 }}
@@ -144,6 +162,11 @@ export const TransactionsView = () => {
                                                 {tx.description && (
                                                     <p className="text-xs text-[#6b6b6b] truncate max-w-xs">{tx.description}</p>
                                                 )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-sm font-medium text-[#1d1d1b]">
+                                                    {tx.account ? tx.account.name : "-"}
+                                                </p>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${tx.type === "INCOME" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
@@ -172,7 +195,7 @@ export const TransactionsView = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-[#6b6b6b] text-sm italic">
+                                        <td colSpan={6} className="px-6 py-12 text-center text-[#6b6b6b] text-sm italic">
                                             Tidak ada transaksi yang ditemukan.
                                         </td>
                                     </tr>
@@ -181,6 +204,30 @@ export const TransactionsView = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-[#e5e2da] bg-white">
+                        <p className="text-sm text-[#6b6b6b]">
+                            Halaman <span className="font-bold text-[#1d1d1b]">{currentPage}</span> dari <span className="font-bold text-[#1d1d1b]">{totalPages}</span>
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="p-2 border border-[#e5e2da] rounded-lg text-[#6b6b6b] hover:bg-[#f9f8f4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="p-2 border border-[#e5e2da] rounded-lg text-[#6b6b6b] hover:bg-[#f9f8f4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </GlassCard>
         </div>
     );

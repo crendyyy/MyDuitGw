@@ -96,3 +96,33 @@ export async function deleteBudget(id: string) {
         return { error: "Gagal menghapus anggaran." };
     }
 }
+
+export async function updateBudget(id: string, data: {
+    category: string;
+    amount: number;
+    start_date: Date;
+    end_date: Date;
+}) {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    if (!userId) return { error: "Sesi tidak valid." };
+
+    try {
+        const budget = await prisma.budget.update({
+            where: { id, user_id: String(userId) },
+            data: {
+                category: data.category,
+                amount: data.amount,
+                start_date: data.start_date,
+                end_date: data.end_date,
+            },
+        });
+
+        revalidatePath("/dashboard");
+        return { success: true, data: budget };
+    } catch (error: any) {
+        console.error("DEBUG_ERROR: Failed to update budget:", error);
+        return { error: "Gagal memperbarui anggaran." };
+    }
+}

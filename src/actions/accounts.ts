@@ -80,3 +80,26 @@ export async function deleteAccount(id: string) {
         return { error: "Gagal menghapus akun." };
     }
 }
+
+export async function updateAccount(id: string, data: { name: string; type: string }) {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    if (!userId) return { error: "Sesi tidak valid." };
+
+    try {
+        const account = await prisma.account.update({
+            where: { id, user_id: String(userId) },
+            data: {
+                name: data.name,
+                type: data.type,
+            },
+        });
+
+        revalidatePath("/dashboard");
+        return { success: true, data: account };
+    } catch (error: any) {
+        console.error("DEBUG_ERROR: Failed to update account:", error);
+        return { error: "Gagal memperbarui akun." };
+    }
+}

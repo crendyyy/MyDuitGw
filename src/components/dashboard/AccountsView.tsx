@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAccounts, addAccount, deleteAccount } from "@/actions/accounts";
+import { getAccounts, addAccount, deleteAccount, updateAccount } from "@/actions/accounts";
 import {
     Wallet,
     Plus,
@@ -11,7 +11,8 @@ import {
     Banknote,
     Smartphone,
     TrendingUp,
-    MoreVertical
+    MoreVertical,
+    Pencil
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +24,7 @@ export const AccountsView = () => {
     const [saving, setSaving] = useState(false);
     const [displayAmount, setDisplayAmount] = useState("");
     const [amount, setAmount] = useState("");
+    const [editingAccount, setEditingAccount] = useState<any | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -84,6 +86,30 @@ export const AccountsView = () => {
             }
         } catch (error: any) {
             alert("Gagal menghapus akun.");
+        }
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSaving(true);
+        const formData = new FormData(e.currentTarget);
+
+        try {
+            const result = await updateAccount(editingAccount.id, {
+                name: formData.get("name") as string,
+                type: formData.get("type") as string,
+            });
+
+            if (result.error) {
+                alert(result.error);
+            } else {
+                setEditingAccount(null);
+                fetchData();
+            }
+        } catch (error) {
+            alert("Gagal memperbarui akun.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -190,6 +216,58 @@ export const AccountsView = () => {
                         </GlassCard>
                     </motion.div>
                 )}
+
+                {editingAccount && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                    >
+                        <GlassCard className="p-6 border-[#d97757]/20 bg-[#d97757]/5">
+                            <form onSubmit={handleEditSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-[#1d1d1b] uppercase">Nama Akun</label>
+                                    <input
+                                        name="name"
+                                        required
+                                        defaultValue={editingAccount.name}
+                                        placeholder="Misal: BCA"
+                                        className="w-full px-4 py-2 rounded-xl border border-[#e5e2da] bg-white text-sm text-[#1d1d1b] outline-none focus:border-[#d97757]/50"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-[#1d1d1b] uppercase">Tipe</label>
+                                    <select
+                                        name="type"
+                                        required
+                                        defaultValue={editingAccount.type}
+                                        className="w-full px-4 py-2 rounded-xl border border-[#e5e2da] bg-white text-sm text-[#1d1d1b] outline-none focus:border-[#d97757]/50"
+                                    >
+                                        <option value="BANK">Bank</option>
+                                        <option value="E-WALLET">E-Wallet</option>
+                                        <option value="CASH">Tunai</option>
+                                    </select>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="flex-1 py-2 bg-[#d97757] text-white rounded-xl text-sm font-bold disabled:opacity-50"
+                                    >
+                                        {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Simpan Perubahan"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingAccount(null)}
+                                        className="px-4 py-2 bg-[#e5e2da] text-[#6b6b6b] rounded-xl text-sm font-bold"
+                                    >
+                                        Batal
+                                    </button>
+                                </div>
+                            </form>
+                        </GlassCard>
+                    </motion.div>
+                )}
             </AnimatePresence>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -202,7 +280,13 @@ export const AccountsView = () => {
                         className="group"
                     >
                         <GlassCard className="p-6 border-[#e5e2da] hover:border-[#d97757]/30 transition-all cursor-pointer overflow-hidden relative">
-                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 z-10">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setEditingAccount(acc); }}
+                                    className="p-2 text-[#6b6b6b] hover:text-[#d97757] hover:bg-[#d97757]/10 rounded-lg"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDelete(acc.id); }}
                                     className="p-2 text-[#6b6b6b] hover:text-rose-600 hover:bg-rose-50 rounded-lg"

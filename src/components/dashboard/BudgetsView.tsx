@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getBudgets, addBudget, deleteBudget } from "@/actions/budgets";
+import { getBudgets, addBudget, deleteBudget, updateBudget } from "@/actions/budgets";
 import {
     PieChart,
     Plus,
@@ -11,7 +11,8 @@ import {
     CheckCircle2,
     Calendar,
     ChevronRight,
-    Target
+    Target,
+    Pencil
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +26,7 @@ export const BudgetsView = () => {
     const [saving, setSaving] = useState(false);
     const [displayAmount, setDisplayAmount] = useState("");
     const [amount, setAmount] = useState("");
+    const [editingBudget, setEditingBudget] = useState<any | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -89,6 +91,37 @@ export const BudgetsView = () => {
             fetchData();
         } catch (error) {
             alert("Gagal menghapus anggaran.");
+        }
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSaving(true);
+        const formData = new FormData(e.currentTarget);
+
+        const resetDate = parseInt(formData.get("reset_date") as string, 10);
+        const now = new Date();
+        const start_date = new Date(now.getFullYear(), now.getMonth(), resetDate);
+        if (now.getDate() < resetDate) {
+            start_date.setMonth(start_date.getMonth() - 1);
+        }
+        const end_date = new Date(start_date);
+        end_date.setMonth(end_date.getMonth() + 1);
+        end_date.setDate(end_date.getDate() - 1);
+
+        try {
+            await updateBudget(editingBudget.id, {
+                category: formData.get("category") as string,
+                amount: parseFloat(formData.get("amount") as string),
+                start_date,
+                end_date,
+            });
+            setEditingBudget(null);
+            fetchData();
+        } catch (error) {
+            alert("Gagal memperbarui anggaran.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -161,6 +194,57 @@ export const BudgetsView = () => {
                         </GlassCard>
                     </motion.div>
                 )}
+
+                {editingBudget && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                    >
+                        <GlassCard className="p-8 border-[#d97757]/20 bg-white shadow-xl">
+                            <form onSubmit={handleEditSubmit} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Kategori</label>
+                                        <input name="category" required defaultValue={editingBudget.category} placeholder="Misal: Makan & Minum" className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Batas (Rp)</label>
+                                        <input type="hidden" name="amount" value={amount || editingBudget.amount} />
+                                        <input
+                                            type="text"
+                                            required
+                                            value={displayAmount || new Intl.NumberFormat("id-ID").format(editingBudget.amount)}
+                                            onChange={handleAmountChange}
+                                            placeholder="0"
+                                            className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-[#1d1d1b] uppercase ml-1">Tanggal Siklus (1-31)</label>
+                                        <input name="reset_date" type="number" min="1" max="31" required defaultValue={new Date(editingBudget.start_date).getDate()} className="w-full px-4 py-3 rounded-xl border border-[#e5e2da] text-[#1d1d1b] outline-none focus:border-[#d97757]/50" />
+                                    </div>
+                                </div>
+                                <div className="flex gap-4">
+                                    <button type="submit" disabled={saving} className="flex-1 py-4 bg-[#1d1d1b] text-white rounded-xl font-bold shadow-lg hover:shadow-[#1d1d1b]/20 disabled:opacity-50 transition-all">
+                                        {saving ? "Menyimpan..." : "Simpan Perbaikan"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingBudget(null);
+                                            setAmount("");
+                                            setDisplayAmount("");
+                                        }}
+                                        className="px-8 py-4 bg-[#f1efea] text-[#1d1d1b] rounded-xl font-bold transition-all"
+                                    >
+                                        Batal
+                                    </button>
+                                </div>
+                            </form>
+                        </GlassCard>
+                    </motion.div>
+                )}
             </AnimatePresence>
 
             <div className="grid grid-cols-1 gap-6">
@@ -217,12 +301,24 @@ export const BudgetsView = () => {
                                             {isOver ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                                             {isOver ? "Over" : "Aman"}
                                         </div>
-                                        <button
-                                            onClick={() => handleDelete(budget.id)}
-                                            className="p-3 text-[#6b6b6b] hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setEditingBudget(budget);
+                                                    setAmount(String(budget.amount));
+                                                    setDisplayAmount(new Intl.NumberFormat("id-ID").format(budget.amount));
+                                                }}
+                                                className="p-3 text-[#6b6b6b] hover:text-[#d97757] hover:bg-[#d97757]/10 rounded-xl transition-all"
+                                            >
+                                                <Pencil className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(budget.id)}
+                                                className="p-3 text-[#6b6b6b] hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </GlassCard>

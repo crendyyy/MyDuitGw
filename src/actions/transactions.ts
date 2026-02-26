@@ -137,8 +137,8 @@ export async function getTransactions() {
 
   return await prisma.transaction.findMany({
     where: { user_id: userId },
-    orderBy: { date: "desc" },
-    take: 10,
+    orderBy: { created_at: "desc" },
+    include: { account: true },
   });
 }
 
