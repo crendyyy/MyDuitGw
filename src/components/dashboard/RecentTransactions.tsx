@@ -14,8 +14,8 @@ export const RecentTransactions = () => {
         setLoading(true);
         try {
             const data = await getTransactions();
-            setTransactions(data.slice(0, 4));
-            console.log(data);
+            const latestTransactions = data.toReversed().slice(0, 4);
+            setTransactions(latestTransactions);
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
         } finally {
