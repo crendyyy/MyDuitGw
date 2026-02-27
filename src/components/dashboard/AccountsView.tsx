@@ -182,6 +182,7 @@ export const AccountsView = () => {
                                         <option value="BANK">Bank</option>
                                         <option value="E-WALLET">E-Wallet</option>
                                         <option value="CASH">Tunai</option>
+                                        <option value="SECURITAS">Sekuritas</option>
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
