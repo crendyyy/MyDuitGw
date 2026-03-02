@@ -39,6 +39,7 @@ model Transaction {
   user        User            @relation(fields: [user_id], references: [id])
   account_id  String?
   account     Account?        @relation(fields: [account_id], references: [id])
+  to_account_id String?
   amount      Float
   type        TransactionType
   category    String          // Simplified for now, or link to a Category model

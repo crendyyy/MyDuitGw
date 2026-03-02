@@ -154,7 +154,7 @@ export const TransactionsView = () => {
                                                     {format(new Date(tx.date), "dd MMM yyyy", { locale: id })}
                                                 </p>
                                                 <p className="text-[10px] text-[#6b6b6b]">
-                                                    {format(new Date(tx.date), "HH:mm")}
+                                                    {format(new Date(tx.created_at), "HH:mm")}
                                                 </p>
                                             </td>
                                             <td className="px-6 py-4">

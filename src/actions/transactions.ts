@@ -36,6 +36,7 @@ export async function addTransaction(data: {
         date: data.date,
         description: data.description || null,
         account_id: accountId,
+        to_account_id: data.to_account_id || null,
         user_id: userId,
       },
     });
@@ -93,20 +94,37 @@ export async function deleteTransaction(id: string) {
   }
 
   if (transaction.account_id) {
-    // Attempt to reverse the transfer from the description or we'd need a separate field.
-    // However, since type TRANSFER doesn't strictly store the destination account ID 
-    // unless we parse description/create two rows, doing a generic reverse is tricky.
-    // Let's implement reversing the origin decrement for now. To do a perfect reverse, 
-    // a database schema change (adding `to_account_id` to Transaction model) is best.
-    const amountToUndo = transaction.type === "INCOME" ? -transaction.amount : transaction.amount;
-    await prisma.account.update({
-      where: { id: transaction.account_id },
-      data: {
-        balance: {
-          increment: amountToUndo,
+    if (transaction.type === "TRANSFER" && transaction.to_account_id) {
+      // Restore balance to source account
+      await prisma.account.update({
+        where: { id: transaction.account_id },
+        data: {
+          balance: {
+            increment: transaction.amount,
+          },
         },
-      },
-    });
+      });
+
+      // Deduct balance from destination account
+      await prisma.account.update({
+        where: { id: transaction.to_account_id },
+        data: {
+          balance: {
+            decrement: transaction.amount,
+          },
+        },
+      });
+    } else {
+      const amountToUndo = transaction.type === "INCOME" ? -transaction.amount : transaction.amount;
+      await prisma.account.update({
+        where: { id: transaction.account_id },
+        data: {
+          balance: {
+            increment: amountToUndo,
+          },
+        },
+      });
+    }
   }
 
   await prisma.transaction.delete({
